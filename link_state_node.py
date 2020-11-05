@@ -6,18 +6,34 @@ class Link_State_Node(Node):
         super().__init__(id)
         self.full_graph = [] #every edge in the graph represented as a list of tuples in the form (node1, node2, cost)
 
+        self.hops = {id: None}
+        self.costs = {id: 0}
+
     # Return a string
     def __str__(self):
-        return "Rewrite this function to define your node dump printout"
+        return "A Link-state Node: " + str(self.id) + "\n"
 
     # Fill in this function
     def link_has_been_updated(self, neighbor, latency):
         # latency = -1 if delete a link
-        pass
+
+        if latency == -1 and neighbor in self.neighbors:
+            self.neighbors.remove(neighbor)
+            del self.hops[neighbor]
+            del self.costs[neighbor]
+
+        elif neighbor not in self.neighbors:
+            self.neighbors.append(neighbor)
+            self.hops[neighbor] = [neighbor]
+            self.costs[neighbor] = latency
+
+        # self.send_to_neighbors all of the updates recieved
+
 
     # Fill in this function
     def process_incoming_routing_message(self, m):
-        pass
+        # parse out the recieved updates
+        print(self.id, ' recieved: ', m)
 
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination): 
@@ -61,3 +77,4 @@ def get_latency(node1, node2, graph):
         if edge[0].id == node2.id and edge[1].id == node1.id:
             return edge[2]
     raise ValueError("Should never see this")
+
