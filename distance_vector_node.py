@@ -22,7 +22,7 @@ class Distance_Vector_Node(Node):
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination):
         try:
-            hops = self.self.routing_table.hops[destination]
+            hops = self.routing_table.hops[destination]
         except:
             return -1
         else:
