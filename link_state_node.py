@@ -22,25 +22,32 @@ class Link_State_Node(Node):
         #print("Link Has Been Updated Tuple: ", tuple)
         self.full_graph.append(tuple)
         #print("Link Has Been Updated Graph: ", self.full_graph)
-        self.send_to_neighbors(self.full_graph)
+        message = json.dumps(self.full_graph)
+        self.send_to_neighbors(message)
 
     # Fill in this function
     def process_incoming_routing_message(self, m):
         # parse out the recieved updates
         #print("M: ", m)
-        for edge in m:
+        neighbor_graph = json.loads(m)
+        anything_different = False
+        for edge in neighbor_graph:
             already_in_graph = False
             for i, eddge in enumerate(self.full_graph):
                 if (edge[0] == eddge[0] and edge[1] == eddge[1]) or (edge[0] == eddge[1] and edge[1] == eddge[0]):
                     already_in_graph = True
                     if edge[3] > eddge[3]:
+                        anything_different = True
                         del self.full_graph[i]
                         self.full_graph.append(edge)
                         break
                     break
             if not already_in_graph:
+                anything_different = True
                 self.full_graph.append(edge)
         #print("Process Incoming Routing Messages Graph: ", self.full_graph)
+        if anything_different:
+            self.send_to_neighbors(m)
 
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination):
