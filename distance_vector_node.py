@@ -1,5 +1,5 @@
 from simulator.node import Node
-
+import json
 
 class Distance_Vector_Node(Node):
     def __init__(self, id):
@@ -29,7 +29,6 @@ class Distance_Vector_Node(Node):
             return hops[0]
 
 class RoutingTable:
-
     def __init__(self, id: int):
         self.cost = {id: 0}
         self.hops = {id: None}
