@@ -15,7 +15,7 @@ class Link_State_Node(Node):
         tuple = (self.id, neighbor, latency)
         self.neighbors.append(neighbor) #Might not need this
         for i, edge in enumerate(self.full_graph):
-            if (edge[0] == tuple[0] and edge[1] == tuple[1]) or (edge[0] == tuple[1] and edge[1] == tuple[0]):
+            if edge[0] == tuple[0] and edge[1] == tuple[1]:
                 del self.full_graph[i]
 
         self.full_graph.append(tuple)
@@ -26,7 +26,7 @@ class Link_State_Node(Node):
         # parse out the recieved updates
         for edge in m:
             for i, eddge in enumerate(self.full_graph):
-                if (edge[0] == eddge[0] and edge[1] == eddge[1]) or (edge[0] == eddge[1] and edge[1] == eddge[0]):
+                if edge[0] == eddge[0] and edge[1] == eddge[1]:
                     del self.full_graph[i]
             self.full_graph.append(edge)
 
@@ -81,14 +81,10 @@ def get_neighbors(node, graph):
     for edge in graph:
         if node == edge[0]:
             neighbors.append(edge[1])
-        elif node == edge[1]:
-            neighbors.append(edge[0])
     return neighbors
 
 def get_latency(node1, node2, graph):
     for edge in graph:
         if edge[0] == node1 and edge[1] == node2:
-            return edge[2]
-        if edge[0] == node2 and edge[1] == node1:
             return edge[2]
     raise ValueError("Should never see this")
