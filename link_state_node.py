@@ -1,5 +1,5 @@
 from simulator.node import Node
-
+import json
 
 class Link_State_Node(Node):
     def __init__(self, id):
@@ -15,20 +15,26 @@ class Link_State_Node(Node):
         tuple = (self.id, neighbor, latency)
         self.neighbors.append(neighbor) #Might not need this
         for i, edge in enumerate(self.full_graph):
-            if edge[0] == tuple[0] and edge[1] == tuple[1]:
+            if (edge[0] == tuple[0] and edge[1] == tuple[1]) or (edge[0] == tuple[1] and edge[1] == tuple[0]):
                 del self.full_graph[i]
+                break
 
+        print("Link Has Been Updated Tuple: ", tuple)
         self.full_graph.append(tuple)
+        print("Link Has Been Updated Graph: ", self.full_graph)
         self.send_to_neighbors(self.full_graph)
 
     # Fill in this function
     def process_incoming_routing_message(self, m):
         # parse out the recieved updates
+        print("M: ", m)
         for edge in m:
             for i, eddge in enumerate(self.full_graph):
-                if edge[0] == eddge[0] and edge[1] == eddge[1]:
+                if (edge[0] == eddge[0] and edge[1] == eddge[1]) or (edge[0] == eddge[1] and edge[1] == eddge[0]):
                     del self.full_graph[i]
+                    break
             self.full_graph.append(edge)
+        print("Process Incoming Routing Messages Graph: ", self.full_graph)
 
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination):
@@ -81,10 +87,14 @@ def get_neighbors(node, graph):
     for edge in graph:
         if node == edge[0]:
             neighbors.append(edge[1])
+        elif node == edge[1]:
+            neighbors.append(edge[0])
     return neighbors
 
 def get_latency(node1, node2, graph):
     for edge in graph:
         if edge[0] == node1 and edge[1] == node2:
+            return edge[2]
+        if edge[0] == node2 and edge[1] == node1:
             return edge[2]
     raise ValueError("Should never see this")
