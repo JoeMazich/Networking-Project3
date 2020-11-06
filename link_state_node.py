@@ -13,6 +13,7 @@ class Link_State_Node(Node):
     # Fill in this function
     def link_has_been_updated(self, neighbor, latency):
         tuple = (self.id, neighbor, latency)
+        self.neighbors.append(neighbor) #Might not need this
         for i, edge in enumerate(self.full_graph):
             if (edge[0] == tuple[0] and edge[1] == tuple[1]) or (edge[0] == tuple[1] and edge[1] == tuple[0]):
                 del self.full_graph[i]
@@ -32,43 +33,62 @@ class Link_State_Node(Node):
     # Return a neighbor, -1 if no path to destination
     def get_next_hop(self, destination):
         print(self.full_graph)
+        #print(self.neighbors)
+        #print("Self: ", self)
+        #print("Destination: ", destination)
         if self.id == destination:
-            return self #Not actually sure what to do in this case
-        distances = {self: 0}
-        previous = {self: None}
-        known_nodes = [self]
-        current = self
+            return self.id #Not actually sure what to do in this case
+        distances = {self.id: 0}
+        previous = {self.id: -1}
+        known_nodes = [self.id]
+        current = self.id
 
         while destination not in known_nodes:
-            for neighbor in current.neighbors:
+            #print("current: ", current)
+            #print("distances: ", distances)
+            #print("known nodes: ", known_nodes)
+            for neighbor in get_neighbors(current, self.full_graph):
                 if neighbor not in known_nodes: #prevents loops
+                    #print("neighbor1: ", neighbor)
                     distance = distances[current] + get_latency(current, neighbor, self.full_graph)
+                    #print("distance: ", distance)
+                    #if neighbor in distances:
+                        #print("previous_distance: ", distances[neighbor])
                     if neighbor not in distances or distance < distances[neighbor]:
+                        #print("neighbor2: ", neighbor)
                         distances[neighbor] = distance
                         previous[neighbor] = current
-            min_node = None
+            min_node = -1
             min_dist = float('inf')
             for found_node in distances:
                 if found_node not in known_nodes and distances[found_node] < min_dist:
                     min_node = found_node
                     min_dist = distances[found_node]
-            if min_node == None: #no path to the destination exists
+            if min_node == -1: #no path to the destination exists
                 break
             known_nodes.append(min_node)
             current = min_node
 
         if destination in known_nodes:
             current = destination
-            while previous[current].id != self.id:
+            while previous[current] != self.id:
                 current = previous[current]
             return current
         return -1
 
+def get_neighbors(node, graph):
+    neighbors = []
+    for edge in graph:
+        if node == edge[0]:
+            neighbors.append(edge[1])
+        elif node == edge[1]:
+            neighbors.append(edge[0])
+    return neighbors
 
 def get_latency(node1, node2, graph):
     for edge in graph:
-        if edge[0].id == node1.id and edge[1].id == node2.id:
+        if edge[0] == node1 and edge[1] == node2:
             return edge[2]
-        if edge[0].id == node2.id and edge[1].id == node1.id:
+        if edge[0] == node2 and edge[1] == node1:
             return edge[2]
     raise ValueError("Should never see this")
