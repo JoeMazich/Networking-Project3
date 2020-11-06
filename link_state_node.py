@@ -12,16 +12,16 @@ class Link_State_Node(Node):
 
     # Fill in this function
     def link_has_been_updated(self, neighbor, latency):
-        tuple = (self.id, neighbor, latency)
+        tuple = (self.id, neighbor, latency, self.get_time())
         self.neighbors.append(neighbor) #Might not need this
         for i, edge in enumerate(self.full_graph):
             if (edge[0] == tuple[0] and edge[1] == tuple[1]) or (edge[0] == tuple[1] and edge[1] == tuple[0]):
                 del self.full_graph[i]
                 break
 
-        print("Link Has Been Updated Tuple: ", tuple)
+        #print("Link Has Been Updated Tuple: ", tuple)
         self.full_graph.append(tuple)
-        print("Link Has Been Updated Graph: ", self.full_graph)
+        #print("Link Has Been Updated Graph: ", self.full_graph)
         self.send_to_neighbors(self.full_graph)
 
     # Fill in this function
@@ -29,11 +29,17 @@ class Link_State_Node(Node):
         # parse out the recieved updates
         print("M: ", m)
         for edge in m:
+            already_in_graph = False
             for i, eddge in enumerate(self.full_graph):
                 if (edge[0] == eddge[0] and edge[1] == eddge[1]) or (edge[0] == eddge[1] and edge[1] == eddge[0]):
-                    del self.full_graph[i]
+                    already_in_graph = True
+                    if edge[3] == eddge[3]:
+                        del self.full_graph[i]
+                        self.full_graph.append(edge)
+                        break
                     break
-            self.full_graph.append(edge)
+            if not already_in_graph:
+                self.full_graph.append(edge)
         print("Process Incoming Routing Messages Graph: ", self.full_graph)
 
     # Return a neighbor, -1 if no path to destination
