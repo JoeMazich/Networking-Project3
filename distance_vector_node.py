@@ -6,6 +6,7 @@ class Distance_Vector_Node(Node):
         super().__init__(id)
 
         self.DV = DistanceVector(id=str(id))
+        self.last_updated = self.get_time()
 
     def __str__(self):
         return 'LS node: %s\nRT: %s\n' % (self.id, self.routing_table)
@@ -26,29 +27,31 @@ class Distance_Vector_Node(Node):
             self.DV.update(neighbor, latency)
 
         # Send the messages to neighbors
-        message = '%s~%s' % (self.id, self.DV)
+        message = '%s~%s~%s' % (self.get_time(), self.id, self.DV)
         self.send_to_neighbors(message)
         print(self.DV)
 
     # Fill in this function
     def process_incoming_routing_message(self, m):
-        recieved_from, their_DV = m.split('~')
+        time, recieved_from, their_DV = m.split('~')
         their_DV = DistanceVector(dict=json.loads(their_DV))
 
         updated_flag = False
 
-        for id in their_DV.table:
-            if id not in self.DV.table:
-                updated_flag = True
-                hops = [recieved_from] + their_DV.hops(id)
-                cost = self.DV.cost(recieved_from) + their_DV.cost(id)
-                self.DV.add(id, cost, hops)
-            # Figure out costs 
+        if int(time) > int(self.last_updated):
+            for id in their_DV.table:
+                if id not in self.DV.table:
+                    self.last_updated = time
+                    updated_flag = True
+                    hops = [recieved_from] + their_DV.hops(id)
+                    cost = self.DV.cost(recieved_from) + their_DV.cost(id)
+                    self.DV.add(id, cost, hops)
+                # Figure out costs
 
         if updated_flag:
-            message = '%s~%s' % (self.id, self.DV)
+            message = '%s~%s~%s' % (self.get_time(), self.id, self.DV)
             self.send_to_neighbors(message)
-
+        print(self.id, ' recieved ', m)
         print(self.DV)
 
     def get_next_hop(self, destination):
