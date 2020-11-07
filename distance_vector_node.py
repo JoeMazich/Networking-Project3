@@ -8,8 +8,10 @@ class Distance_Vector_Node(Node):
         self.DV = DistanceVector(id=str(id))
         self.last_updated = self.get_time()
 
+        self.debug = False
+
     def __str__(self):
-        return 'LS node: %s\nRT: %s\n' % (self.id, self.routing_table)
+        return 'DistanceVector node: %s\nDV: %s\n' % (self.id, self.DV)
 
     # Fill in this function
     def link_has_been_updated(self, neighbor, latency):
@@ -29,30 +31,46 @@ class Distance_Vector_Node(Node):
         # Send the messages to neighbors
         message = '%s~%s~%s' % (self.get_time(), self.id, self.DV)
         self.send_to_neighbors(message)
-        print(self.DV)
+
+        if self.debug:
+            print(self.DV)
 
     # Fill in this function
     def process_incoming_routing_message(self, m):
-        time, recieved_from, their_DV = m.split('~')
+        sent_time, recieved_from, their_DV = m.split('~')
         their_DV = DistanceVector(dict=json.loads(their_DV))
+        sent_time = int(sent_time)
+
+        if self.debug:
+            print(self.id, ' received ', m)
+            print(self.DV)
 
         updated_flag = False
 
-        if int(time) > int(self.last_updated):
+        if sent_time > self.last_updated:
+            self.last_updated = sent_time
+
             for id in their_DV.table:
-                if id not in self.DV.table:
-                    self.last_updated = time
+                new_id = id not in self.DV.table
+
+                if not new_id:
+                    better_cost = (their_DV.cost(id) + self.DV.cost(recieved_from)) < self.DV.cost(id)
+                else:
+                    better_cost = False
+
+                wont_create_loop = self.id not in their_DV.hops(id)
+
+                if new_id or (better_cost and wont_create_loop):
                     updated_flag = True
+
                     hops = [recieved_from] + their_DV.hops(id)
                     cost = self.DV.cost(recieved_from) + their_DV.cost(id)
                     self.DV.add(id, cost, hops)
-                # Figure out costs
+
 
         if updated_flag:
             message = '%s~%s~%s' % (self.get_time(), self.id, self.DV)
             self.send_to_neighbors(message)
-        print(self.id, ' recieved ', m)
-        print(self.DV)
 
     def get_next_hop(self, destination):
         try:
@@ -70,7 +88,7 @@ class DistanceVector:
             self.table[id] = (0, [None])
 
         for id, cost_hops in dict.items():
-            self.add(id, int(cost_hops[0]), cost_hops[1])
+            self.add(id, float(cost_hops[0]), cost_hops[1])
 
     def __repr__(self):
         return json.dumps(self.table)
