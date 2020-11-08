@@ -9,7 +9,6 @@ class Distance_Vector_Node(Node):
         self.last_updated = self.get_time()
 
         self.neighbors_DV = {}
-        self.neighbors_last_updated = {}
 
         self.debug = False
 
@@ -86,7 +85,7 @@ class Distance_Vector_Node(Node):
 
         updated = False
 
-        if self.id == 16:
+        if self.id == 9:
             print(self.id, ' ', self.DV)
             print(' ', m)
 
@@ -101,16 +100,17 @@ class Distance_Vector_Node(Node):
                 old_cost = self.DV.cost(node)
                 new_cost = their_DV.cost(node) + self.DV.cost(recieved_from)
                 if old_cost != new_cost:
+                    updated = True
                     self.DV.update_this_cost(node, new_cost)
 
 
 
-        if self.id == 16:
+        if self.id == 9:
             print(self.id, ' ', self.DV)
 
         for node in self.DV.table:
 
-            '''if self.id == 7 and node == '11':
+            '''if self.id == 1 and node == '17':
                 print('HERE', self.DV)'''
 
             min_cost = self.DV.cost(node)
@@ -124,27 +124,27 @@ class Distance_Vector_Node(Node):
                 if not loop:
                     new_cost = self.DV.cost(str(neighbor_id)) + neighbor_DV.cost(node)
 
-                    if self.id == 16 and node == '6':
+                    '''if self.id == 9 and node == '17':
                         print('HIT1', self.DV.cost(str(neighbor_id)), neighbor_DV.cost(node))
-                        print('HIT2', neighbor_id, neighbor_DV)
+                        print('HIT2', neighbor_id, neighbor_DV)'''
 
                     if new_cost < min_cost:
                         updated = True
                         min_cost = new_cost
                         min_hops = self.DV.hops(neighbor_id) + neighbor_DV.hops(node)
-                        if self.id == 7 and node == '11':
+                        if self.id == 9 and node == '17':
                             print(neighbor_id, new_cost, min_hops, 'HIT')
 
             self.DV.add(node, min_cost, min_hops)
 
 
 
-            if self.id == 16 and node == '6':
-                print('^ min for ', node)
+            if self.id == 9 and node == '17':
+                '''print('^ min for ', node)
                 print(self.id, ' ', self.DV)
                 for id, DV in self.neighbors_DV.items():
                     if id == '17':
-                        print('  ', id, DV)
+                        print('  ', id, DV)'''
                 print(self.id, ' ', self.DV)
                 print()
 
