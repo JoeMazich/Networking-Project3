@@ -29,16 +29,39 @@ class Distance_Vector_Node(Node):
             pass
 
         elif neighbor not in self.neighbors:
+            # if we dont know the neighbor as a neighbor
             self.neighbors.append(neighbor)
+            # but we do know of them
+            if neighbor in self.DV.table:
+                # see if the updated path to them is better
+                if latency < self.DV.cost(neighbor):
+                    # if it is update it, ptheriwse dont
+                    self.DV.add(neighbor, latency, [neighbor])
+            else:
+                # but if we dont even know them at all add them as a new node
+                self.DV.add(neighbor, latency, [neighbor])
+        # if we know of this neighbor as being a neighbor
+        # and the connection we have to them is direct
+        elif self.get_next_hop(neighbor) == int(neighbor):
+            # update the cost of this connection
+            self.DV.update_cost(neighbor, latency)
+        # if we know of this neighbor as being a neighbor
+        # but we dont have a direct connection to them
+        # check to see if this new connection beats the old
+        elif latency < self.DV.cost(neighbor):
+            # if it does, update it to the new
+            self.DV.add(neighbor, latency, [neighbor])
 
-            if neighbor not in self.DV.table:
+
+
+            '''if neighbor not in self.DV.table:
                 self.DV.add(neighbor, latency, [neighbor])
 
             elif self.get_next_hop(neighbor) == int(neighbor):
                 self.DV.update_cost(neighbor, latency)
 
         elif self.get_next_hop(neighbor) == int(neighbor):
-            self.DV.update_cost(neighbor, latency)
+            self.DV.update_cost(neighbor, latency)'''
 
         for node in self.DV.table:
             '''print('HERE', self.DV)'''
