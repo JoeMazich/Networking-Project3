@@ -8,6 +8,8 @@ class Distance_Vector_Node(Node):
         self.DV = DistanceVector(id=str(id))
         self.last_updated = self.get_time()
 
+        self.neighbors_DV = {}
+
         self.debug = False
 
     def __str__(self):
@@ -25,67 +27,75 @@ class Distance_Vector_Node(Node):
         elif neighbor not in self.neighbors:
             self.neighbors.append(neighbor)
             self.DV.add(neighbor, latency, [neighbor])
-        else:
-            self.DV.update(neighbor, latency)
+        elif self.DV.cost(neighbor) > latency:
+            self.DV.update_cost(neighbor, latency)
 
         # Send the messages to neighbors
-        message = '%s~%s~%s' % (self.get_time(), self.id, self.DV)
+        message = '%s~%s' % (self.id, self.DV)
         self.send_to_neighbors(message)
-
-        if self.debug:
-            print(self.DV)
 
     # Fill in this function
     def process_incoming_routing_message(self, m):
-        sent_time, recieved_from, their_DV = m.split('~')
+
+        recieved_from, their_DV = m.split('~')
         their_DV = DistanceVector(dict=json.loads(their_DV))
-        sent_time = int(sent_time)
+        self.neighbors_DV[recieved_from] = their_DV
 
-        if self.debug:
-            print(self.id, ' received ', m)
-            print(self.DV)
+        updated = False
 
-        updated_flag = False
+        for node in their_DV.table:
+            if node not in self.DV.table:
+                updated = True
+                hops = [recieved_from] + their_DV.hops(node)
+                cost = self.DV.cost(recieved_from) + their_DV.cost(node)
+                self.DV.add(node, cost, hops)
+            elif self.get_next_hop(node) == int(recieved_from):
+                old_cost = self.DV.cost(node)
+                new_cost = their_DV.cost(node) + self.DV.cost(recieved_from)
+                if old_cost != new_cost:
+                    self.DV.update_this_cost(node, new_cost)
 
-        if sent_time > self.last_updated:
-            self.last_updated = sent_time
+        for node in self.DV.table:
+            min_cost = self.DV.cost(node)
+            min_hops = self.DV.hops(node)
 
-            for id in their_DV.table:
-                new_id = id not in self.DV.table
+            for neighbor_id, neighbor_DV in self.neighbors_DV.items():
 
-                if not new_id:
-                    better_cost = (their_DV.cost(id) + self.DV.cost(recieved_from)) < self.DV.cost(id)
+                if node in neighbor_DV.table:
+                    loop = self.id in neighbor_DV.hops(node)
                 else:
-                    better_cost = False
+                    loop = True
 
-                wont_create_loop = self.id not in their_DV.hops(id)
+                if not loop :
+                    new_cost = self.DV.cost(str(neighbor_id)) + neighbor_DV.cost(node)
 
-                if new_id or (better_cost and wont_create_loop):
-                    updated_flag = True
+                    if new_cost < min_cost:
+                        updated = True
+                        min_cost = new_cost
+                        min_hops = self.DV.hops(neighbor_id) + neighbor_DV.hops(node)
 
-                    hops = [recieved_from] + their_DV.hops(id)
-                    cost = self.DV.cost(recieved_from) + their_DV.cost(id)
-                    self.DV.add(id, cost, hops)
+            self.DV.add(node, min_cost, min_hops)
 
-
-        if updated_flag:
-            message = '%s~%s~%s' % (self.get_time(), self.id, self.DV)
+        if updated:
+            updated = False
+            message = '%s~%s' % (self.id, self.DV)
             self.send_to_neighbors(message)
 
     def get_next_hop(self, destination):
         try:
             hops = self.DV.hops(str(destination))
+            cost = self.DV.cost(str(destination))
+            return int(hops[0])
         except:
             return -1
-        else:
-            return int(hops[0])
+
 
 class DistanceVector:
-    def __init__(self, id: str=None, dict={}):
+    def __init__(self, id=None, dict={}):
         self.table = {}
 
         if id:
-            self.table[id] = (0, [None])
+            self.table[id] = (float(0), [None])
 
         for id, cost_hops in dict.items():
             self.add(id, float(cost_hops[0]), cost_hops[1])
@@ -93,16 +103,10 @@ class DistanceVector:
     def __repr__(self):
         return json.dumps(self.table)
 
-    def delete(self, id: str):
+    def __len__(self):
+        return int(len(self.table))
 
-        for other_id in self.table:
-            if id in self.hops(other_id):
-                old_cost, hops = self.table[other_id]
-                self.table[other_id] = (math.inf, hops[0:hops.index(id)] + [-1])
-
-        del self.table[id]
-
-    def update(self, id: str, cost: int):
+    def update_cost(self, id: str, cost: int):
         old_neighbor_cost = self.cost(id)
 
         for other_id in self.table:
@@ -110,14 +114,21 @@ class DistanceVector:
                 old_cost, hops = self.table[other_id]
                 self.table[other_id] = (old_cost - old_neighbor_cost + cost, hops)
 
-    def add(self, id: str, cost: int, hops: list):
-        self.table[id] = (cost, hops)
+    def delete(self, id):
+        for other_id in self.table:
+            if id in self.hops(other_id):
+                old_cost, hops = self.table[other_id]
+                self.table[other_id] = (math.inf, [-1])
 
-    def cost(self, id: str) -> int:
-        return self.table[id][0]
+    def update_this_cost(self, id, cost):
+        old_cost, hops = self.table[id]
+        self.table[id] = (float(cost), hops)
 
-    def hops(self, id: str) -> list:
+    def add(self, id, cost, hops):
+        self.table[id] = (float(cost), hops)
+
+    def cost(self, id):
+        return float(self.table[id][0])
+
+    def hops(self, id):
         return self.table[id][1]
-
-    def get_info(self, id: str) -> tuple:
-        return self.table[id]
