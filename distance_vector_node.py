@@ -52,8 +52,6 @@ class Distance_Vector_Node(Node):
             # if it does, update it to the new
             self.DV.add(neighbor, latency, [neighbor])
 
-
-
             '''if neighbor not in self.DV.table:
                 self.DV.add(neighbor, latency, [neighbor])
 
@@ -64,31 +62,24 @@ class Distance_Vector_Node(Node):
             self.DV.update_cost(neighbor, latency)'''
 
         for node in self.DV.table:
-            '''print('HERE', self.DV)'''
             min_cost = self.DV.cost(node)
             min_hops = self.DV.hops(node)
 
             for neighbor_id, neighbor_DV in self.neighbors_DV.items():
-
                 if node in neighbor_DV.table:
-                    loop = self.id in neighbor_DV.hops(node)
+                    loop = str(self.id) in neighbor_DV.hops(node)
                 else:
                     loop = True
-
                 if not loop:
                     new_cost = self.DV.cost(str(neighbor_id)) + neighbor_DV.cost(node)
-
                     if new_cost < min_cost:
                         updated = True
                         min_cost = new_cost
                         min_hops = self.DV.hops(neighbor_id) + neighbor_DV.hops(node)
-                        '''print(neighbor_id, new_cost, min_hops)
-
-            print('^ min for ', node)'''
             self.DV.add(node, min_cost, min_hops)
 
-        '''print(self.DV)'''
-        '''print()'''
+        #print(self.DV)
+        #print()
         # Send the messages to neighbors
         message = '%s~%s' % (self.id, self.DV)
         self.send_to_neighbors(message)
@@ -103,10 +94,6 @@ class Distance_Vector_Node(Node):
 
         updated = False
 
-        '''if self.id == 7:
-            print(self.id, ' ', self.DV)
-            print(' ', m)'''
-
         for node in their_DV.table:
             if node not in self.DV.table:
                 updated = True
@@ -119,43 +106,22 @@ class Distance_Vector_Node(Node):
                 if old_cost != new_cost:
                     self.DV.update_this_cost(node, new_cost)
 
-        '''if self.id == 7:
-            print(self.id, ' ', self.DV)
-            for neighbor_id, neighbor_DV in self.neighbors_DV.items():
-                print(' ', neighbor_id, ' ', neighbor_DV)'''
-
         for node in self.DV.table:
-            '''if self.id == 7 and node == '11':
-                print('HERE', self.DV)'''
             min_cost = self.DV.cost(node)
             min_hops = self.DV.hops(node)
 
             for neighbor_id, neighbor_DV in self.neighbors_DV.items():
-
                 if node in neighbor_DV.table:
-                    loop = self.id in neighbor_DV.hops(node)
+                    loop = str(self.id) in neighbor_DV.hops(node)
                 else:
                     loop = True
-
                 if not loop:
                     new_cost = self.DV.cost(str(neighbor_id)) + neighbor_DV.cost(node)
-                    '''if self.id == 7 and node == '11':
-                        print('HIT1', self.DV.cost(str(neighbor_id)), neighbor_DV.cost(node))
-                        print('HIT2', neighbor_id, neighbor_DV)'''
-
                     if new_cost < min_cost:
                         updated = True
                         min_cost = new_cost
                         min_hops = self.DV.hops(neighbor_id) + neighbor_DV.hops(node)
-                        '''if self.id == 7 and node == '11':
-                            print(neighbor_id, new_cost, min_hops, 'HIT')
-            if self.id == 7 and node == '11':
-                print('^ min for ', node)'''
             self.DV.add(node, min_cost, min_hops)
-
-        '''if self.id == 7:
-            print(self.id, ' ', self.DV)
-            print()'''
 
         if updated:
             message = '%s~%s' % (self.id, self.DV)
