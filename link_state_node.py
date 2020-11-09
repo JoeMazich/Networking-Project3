@@ -12,6 +12,8 @@ class Link_State_Node(Node):
 
     # Fill in this function
     def link_has_been_updated(self, neighbor, latency):
+        if latency < 0:
+            latency = float('inf')
         tuple = (self.id, neighbor, latency, self.get_time())
         self.neighbors.append(neighbor) #Might not need this
         for i, edge in enumerate(self.full_graph):
