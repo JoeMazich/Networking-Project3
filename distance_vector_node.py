@@ -10,6 +10,8 @@ class Distance_Vector_Node(Node):
         self.neighbors_DVs = {}
         self.directly_to = {}
 
+        self.periodic_reassureance = 0
+
     def __str__(self):
         return '\nDistance-vector node: %s\nDV: %s\n' % (self.id, self.DV)
 
@@ -33,6 +35,10 @@ class Distance_Vector_Node(Node):
             passing = True
 
         if not passing:
+
+            '''print('updating')
+            print(self.DV)'''
+
             old_DV = DistanceVector(dict=self.DV.table)
             self.DV.dump(str(self.id))
 
@@ -61,6 +67,9 @@ class Distance_Vector_Node(Node):
 
                 self.DV.update(known_node, min_cost, min_hops)
 
+            '''print(self.DV)
+            print()'''
+
             if old_DV.table != self.DV.table:
                 message = '%s~%s' % (self.id, self.DV)
                 self.send_to_neighbors(message)
@@ -69,6 +78,12 @@ class Distance_Vector_Node(Node):
 
         recieved_from, their_DV = m.split('~')
         self.neighbors_DVs[int(recieved_from)] = DistanceVector(dict=json.loads(their_DV))
+
+        self.periodic_reassureance += 1
+
+        '''print(self.DV)
+        print('Got message')
+        print(' ',m)'''
 
         old_DV = DistanceVector(dict=self.DV.table)
         self.DV.dump(str(self.id))
@@ -88,19 +103,32 @@ class Distance_Vector_Node(Node):
             else:
                 min_cost, min_hops = math.inf, [-1]
 
-            for neighbor_id, neighbor_DV in self.neighbors_DVs.items():
-                if known_node in neighbor_DV.table and neighbor_id in self.directly_to and self.id not in neighbor_DV.hops(known_node):
-                    new_cost = self.directly_to[neighbor_id] + neighbor_DV.cost(known_node)
+                for neighbor_id, neighbor_DV in self.neighbors_DVs.items():
+                    if known_node in neighbor_DV.table and neighbor_id in self.directly_to and self.id not in neighbor_DV.hops(known_node):
+                        new_cost = self.directly_to[neighbor_id] + neighbor_DV.cost(known_node)
 
-                    if new_cost <= min_cost:
-                        min_cost = new_cost
-                        min_hops = [neighbor_id] + neighbor_DV.hops(known_node)
+                        if new_cost < min_cost:
+                            min_cost = new_cost
+                            min_hops = [neighbor_id] + neighbor_DV.hops(known_node)
 
             self.DV.update(known_node, min_cost, min_hops)
 
+        '''print('Neighbors DVs')
+        for neighbor_id, neighbor_DV in self.neighbors_DVs.items():
+            print('  ',neighbor_DV)
+        print(self.DV)'''
+
         if old_DV.table != self.DV.table:
+            '''print('Sent a message')'''
             message = '%s~%s' % (self.id, self.DV)
             self.send_to_neighbors(message)
+        elif self.periodic_reassureance > 6:
+            self.periodic_reassureance = 0
+            '''print('Sent a message')'''
+            message = '%s~%s' % (self.id, self.DV)
+            self.send_to_neighbors(message)
+
+        '''print()'''
 
 
     def get_next_hop(self, destination):
