@@ -78,42 +78,42 @@ class Distance_Vector_Node(Node):
         last_updated = int(last_updated)
 
 
-        if last_updated > self.their_last_updated[recieved_from]:
+        if recieved_from in self.their_last_updated and last_updated > self.their_last_updated[recieved_from]:
             self.neighbors_DVs[recieved_from] = DistanceVector(dict=json.loads(their_DV))
             self.their_last_updated[recieved_from] = last_updated
 
-        old_DV = DistanceVector(dict=self.DV.table)
-        self.DV.dump(str(self.id))
+            old_DV = DistanceVector(dict=self.DV.table)
+            self.DV.dump(str(self.id))
 
-        known_nodes = [self.id]
+            known_nodes = [self.id]
 
-        for id in self.neighbors:
-            for node in self.neighbors_DVs[id].table:
-                if node not in known_nodes:
-                    known_nodes.append(node)
+            for id in self.neighbors:
+                for node in self.neighbors_DVs[id].table:
+                    if node not in known_nodes:
+                        known_nodes.append(node)
 
-        for known_node in known_nodes:
-            known_node = str(known_node)
+            for known_node in known_nodes:
+                known_node = str(known_node)
 
-            if int(known_node) == self.id:
-                min_cost, min_hops = float(0), [None]
-            else:
-                min_cost, min_hops = math.inf, [-1]
+                if int(known_node) == self.id:
+                    min_cost, min_hops = float(0), [None]
+                else:
+                    min_cost, min_hops = math.inf, [-1]
 
-                for neighbor_id, neighbor_DV in self.neighbors_DVs.items():
-                    if known_node in neighbor_DV.table and neighbor_id in self.directly_to and self.id not in neighbor_DV.hops(known_node):
-                        new_cost = self.directly_to[neighbor_id] + neighbor_DV.cost(known_node)
+                    for neighbor_id, neighbor_DV in self.neighbors_DVs.items():
+                        if known_node in neighbor_DV.table and neighbor_id in self.directly_to and self.id not in neighbor_DV.hops(known_node):
+                            new_cost = self.directly_to[neighbor_id] + neighbor_DV.cost(known_node)
 
-                        if new_cost < min_cost:
-                            min_cost = new_cost
-                            min_hops = [neighbor_id] + neighbor_DV.hops(known_node)
+                            if new_cost < min_cost:
+                                min_cost = new_cost
+                                min_hops = [neighbor_id] + neighbor_DV.hops(known_node)
 
-            self.DV.update(known_node, min_cost, min_hops)
+                self.DV.update(known_node, min_cost, min_hops)
 
-        if old_DV.table != self.DV.table:
-            self.my_last_updated += 1
-            message = '%s~%s~%s' % (self.my_last_updated, self.id, self.DV)
-            self.send_to_neighbors(message)
+            if old_DV.table != self.DV.table:
+                self.my_last_updated += 1
+                message = '%s~%s~%s' % (self.my_last_updated, self.id, self.DV)
+                self.send_to_neighbors(message)
 
     def get_next_hop(self, destination):
         try:
