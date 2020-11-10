@@ -10,34 +10,33 @@ class Distance_Vector_Node(Node):
         self.neighbors_DVs = {}
         self.directly_to = {}
 
-        self.periodic_reassureance = 0
+        self.my_last_updated = 0
+        self.their_last_updated = {}
+        # send it with the amount of times it has been updated and only care about  those times after it
 
     def __str__(self):
         return '\nDistance-vector node: %s\nDV: %s\n' % (self.id, self.DV)
 
     def link_has_been_updated(self, neighbor, latency):
         passing = False
-        forced_update = False
 
         if latency != -1 and neighbor not in self.neighbors:
             self.neighbors.append(neighbor)
             self.directly_to[neighbor] = latency
             self.neighbors_DVs[neighbor] = DistanceVector(dict={str(neighbor): (float(0), [None])})
+            self.their_last_updated[neighbor] = 0
         elif latency != -1 and neighbor in self.neighbors:
             old_latency = self.directly_to[neighbor]
             self.directly_to[neighbor] = latency
-            forced_update = True
         elif latency == -1 and neighbor in self.neighbors:
             self.neighbors.remove(neighbor)
             del self.directly_to[neighbor]
             del self.neighbors_DVs[neighbor]
+            del self.their_last_updated[neighbor]
         else:
             passing = True
 
         if not passing:
-
-            '''print('updating')
-            print(self.DV)'''
 
             old_DV = DistanceVector(dict=self.DV.table)
             self.DV.dump(str(self.id))
@@ -67,23 +66,21 @@ class Distance_Vector_Node(Node):
 
                 self.DV.update(known_node, min_cost, min_hops)
 
-            '''print(self.DV)
-            print()'''
-
             if old_DV.table != self.DV.table:
-                message = '%s~%s' % (self.id, self.DV)
+                self.my_last_updated += 1
+                message = '%s~%s~%s' % (self.my_last_updated, self.id, self.DV)
                 self.send_to_neighbors(message)
 
     def process_incoming_routing_message(self, m):
 
-        recieved_from, their_DV = m.split('~')
-        self.neighbors_DVs[int(recieved_from)] = DistanceVector(dict=json.loads(their_DV))
+        last_updated, recieved_from, their_DV = m.split('~')
+        recieved_from = int(recieved_from)
+        last_updated = int(last_updated)
 
-        self.periodic_reassureance += 1
 
-        '''print(self.DV)
-        print('Got message')
-        print(' ',m)'''
+        if last_updated > self.their_last_updated[recieved_from]:
+            self.neighbors_DVs[recieved_from] = DistanceVector(dict=json.loads(their_DV))
+            self.their_last_updated[recieved_from] = last_updated
 
         old_DV = DistanceVector(dict=self.DV.table)
         self.DV.dump(str(self.id))
@@ -113,23 +110,10 @@ class Distance_Vector_Node(Node):
 
             self.DV.update(known_node, min_cost, min_hops)
 
-        '''print('Neighbors DVs')
-        for neighbor_id, neighbor_DV in self.neighbors_DVs.items():
-            print('  ',neighbor_DV)
-        print(self.DV)'''
-
         if old_DV.table != self.DV.table:
-            '''print('Sent a message')'''
-            message = '%s~%s' % (self.id, self.DV)
+            self.my_last_updated += 1
+            message = '%s~%s~%s' % (self.my_last_updated, self.id, self.DV)
             self.send_to_neighbors(message)
-        elif self.periodic_reassureance > 6:
-            self.periodic_reassureance = 0
-            '''print('Sent a message')'''
-            message = '%s~%s' % (self.id, self.DV)
-            self.send_to_neighbors(message)
-
-        '''print()'''
-
 
     def get_next_hop(self, destination):
         try:
